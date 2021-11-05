@@ -1,5 +1,9 @@
 #include <iostream>
-#include <tuple>	
+#include <time.h>
+#include <tuple>
+#include <array>
+#include <vector>
+#include <random>
 
 using namespace std;
 
@@ -9,11 +13,11 @@ const char ENEMY_TOKEN = 'o';
 class TicTacToe
 {
 public:
-	char gameBoard[3][3] = {
+	array<array<char, 3>, 3> gameBoard = {{
 		{'.', '.', '.'},
 		{'.', '.', '.'},
 		{'.', '.', '.'},
-	};
+	}};
 
 	int isEmpty(int x, int y)
 	{
@@ -67,14 +71,31 @@ public:
 	}
 };
 
-tuple<int, int> playerInput(char currentPlayer){
+tuple<int, int> playerInput()
+{
 	int x, y;
-	cout << currentPlayer << " Please play your turn as a grid of X-axis index: ";
+	cout << "x Please play your turn as a grid of X-axis index: ";
 	cin >> x;
-	cout << currentPlayer << " Please play your turn as a grid of Y-axis index: ";
+	cout << "x Please play your turn as a grid of Y-axis index: ";
 	cin >> y;
 
 	return {x, y};
+}
+
+vector<int> randomPosition()
+{
+	vector<int> randomPosition;
+
+	random_device rd;
+	mt19937 gen(rd());
+	uniform_int_distribution<> distrib(0, 2);
+
+	for (int i = 0; i < 2; i++)
+	{
+		randomPosition.push_back(distrib(gen));
+	}
+
+	return randomPosition;
 }
 
 int main()
@@ -88,36 +109,160 @@ int main()
 	{
 		game.printBoard();
 
-		tuple<int, int> turn = playerInput(currentPlayer);
-		int x = get<0>(turn) - 1;
-		int y = get<1>(turn) - 1;
-
-		while (!((0 <= x) && (x <= 2) && (0 <= y) && (y <= 2))) {
-			cout << "please input values withen bounds 1-3" << endl;
-			turn = playerInput(currentPlayer);
-			x = get<0>(turn) - 1;
-			y = get<1>(turn) - 1;
-		}
-		
-
-		if (game.isEmpty(x, y))
+		if (currentPlayer == ENEMY_TOKEN)
 		{
-			game.gameBoard[x][y] = currentPlayer;
+
+			vector<tuple<int, int>> validTurns;
+
+			// TOP MIDDLE
+			if (game.gameBoard[0][1] == PLAYER_TOKEN)
+			{
+				if (game.gameBoard[0][0] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({0, 2});
+				}
+				if (game.gameBoard[0][2] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({0, 0});
+				}
+				if (game.gameBoard[1][1] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({2, 1});
+				}
+			}
+			// LEFT MIDDLE
+			if (game.gameBoard[1][0] == PLAYER_TOKEN)
+			{
+				if (game.gameBoard[0][0] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({2, 0});
+				}
+				if (game.gameBoard[2][0] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({0, 0});
+				}
+				if (game.gameBoard[1][1] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({1, 2});
+				}
+			}
+			// RIGHT MIDDLE
+			if (game.gameBoard[1][2] == PLAYER_TOKEN)
+			{
+				if (game.gameBoard[0][2] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({2, 2});
+				}
+				if (game.gameBoard[2][2] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({0, 2});
+				}
+				if (game.gameBoard[1][1] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({0, 1});
+				}
+			}
+			// BOTTOM MIDDLE
+			if (game.gameBoard[2][1] == PLAYER_TOKEN)
+			{
+				if (game.gameBoard[2][0] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({2, 2});
+				}
+				if (game.gameBoard[2][2] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({2, 0});
+				}
+				if (game.gameBoard[1][1] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({0, 1});
+				}
+			}
+			// DIAGONALS
+			if (game.gameBoard[1][1] == PLAYER_TOKEN)
+			{
+				if (game.gameBoard[0][0] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({2, 2});
+				}
+				if (game.gameBoard[2][2] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({0, 0});
+				}
+				if (game.gameBoard[0][2] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({2, 0});
+				}
+				if (game.gameBoard[2][0] == PLAYER_TOKEN)
+				{
+					validTurns.push_back({0, 2});
+				}
+			}
+
+			for (int i = 0; i < 9; i++)
+			{
+				vector<int> computerTurn = randomPosition();
+				int x = computerTurn[0];
+				int y = computerTurn[1];
+
+				if (!(game.gameBoard[x][y] == PLAYER_TOKEN))
+				{
+					validTurns.push_back({x, y});
+					break;
+				}
+			}
+
+			srand(time(0));
+			tuple<int, int> computerTurn = validTurns[rand() % validTurns.size()];
+			int computerTurnX = get<0>(computerTurn);
+			int computerTurnY = get<1>(computerTurn);
+
+			while (!(game.isEmpty(computerTurnX, computerTurnY)))
+			{
+				srand(time(0));
+				tuple<int, int> computerTurn = validTurns[rand() % validTurns.size()];
+				computerTurnX = get<0>(computerTurn);
+				computerTurnY = get<1>(computerTurn);
+			}
+
+			game.gameBoard[computerTurnX][computerTurnY] = ENEMY_TOKEN;
+			cout << ENEMY_TOKEN << " played at position x: " << get<0>(computerTurn) + 1 << " y: " << get<1>(computerTurn) + 1 << endl;
+
 			if (game.isWinner(currentPlayer))
 			{
 				cout << currentPlayer << " is the Winner" << endl;
 				game.printBoard();
 				break;
 			}
-		}
-
-		if (currentPlayer == PLAYER_TOKEN)
-		{
-			currentPlayer = ENEMY_TOKEN;
+			currentPlayer = PLAYER_TOKEN;
 		}
 		else
 		{
-			currentPlayer = PLAYER_TOKEN;
+			tuple<int, int> turn = playerInput();
+			int x = get<0>(turn) - 1;
+			int y = get<1>(turn) - 1;
+
+			while (!((0 <= x) && (x <= 2) && (0 <= y) && (y <= 2)))
+			{
+				cout << "please input values withen bounds 1-3" << endl;
+				turn = playerInput();
+				x = get<0>(turn) - 1;
+				y = get<1>(turn) - 1;
+			}
+
+			if (game.isEmpty(x, y))
+			{
+				game.gameBoard[x][y] = PLAYER_TOKEN;
+
+				if (game.isWinner(currentPlayer))
+				{
+					cout << currentPlayer << " is the Winner" << endl;
+					game.printBoard();
+					break;
+				}
+			}
+
+			currentPlayer = ENEMY_TOKEN;
 		}
 	}
 
